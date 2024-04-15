@@ -1,5 +1,6 @@
 from django.shortcuts import render
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
+from .models import User
 from .serializers import UserSerializer
 from rest_framework.renderers import JSONRenderer
 from django.http import HttpResponse
@@ -11,12 +12,12 @@ from django.http import HttpResponse,JsonResponse
 
 # Create your views here.
 from django.views.decorators.csrf import csrf_exempt
+
 @csrf_exempt
-def list(request):
+def userList(request): 
     if request.method =="GET":
         user = User.objects.all()
         serializer_data = UserSerializer(user,many=True)
-        # print(serializer_data.data)
         json_data = JSONRenderer().render(serializer_data.data)
         return HttpResponse(json_data,content_type = 'application/json')
     
@@ -33,29 +34,44 @@ def list(request):
         json_data = JSONRenderer().render(serializer.errors)
         return HttpResponse(json_data, content_type='application/json')
 
-    elif request.method == 'PUT':
-        json_data = request.body
-        stream = io.BytesIO(json_data)
-        python_data = JSONParser().parse(stream)
-        id = python_data.get('id')
-        stu = User.objects.get(id=id)
-        # serializer = UserSerializer(stu, data=python_data, partial = True)
-        serializer = UserSerializer(stu, data=python_data)
-        if serializer.is_valid():
-            serializer.save()
-            res = {'msg':'Data Updated !!'}
-            json_data = JSONRenderer().render(res)
-            return HttpResponse(json_data, content_type='application/json')
-        json_data = JSONRenderer().render(serializer.errors)
-        return HttpResponse(json_data, content_type='application/json') 
- 
-    elif request.method == 'DELETE':
-        json_data = request.body
-        stream = io.BytesIO(json_data)
-        python_data = JSONParser().parse(stream)
-        id = python_data.get('id')
+@csrf_exempt
+def userDetails(request,pk):
+    if request.method=='GET':
+        id = User.objects.filter(id=pk)
         if id:
-            stu = User.objects.get(id=id)
+            stu = User.objects.get(id=pk)
+            serializer_data = UserSerializer(stu)
+            print(serializer_data.data)
+            json_data = JSONRenderer().render(serializer_data.data)
+            return HttpResponse(json_data,content_type = 'application/json')
+        else:
+            res = {'msg': 'id not present in Database'}
+            return JsonResponse(res)
+    
+    elif request.method == 'PUT':
+        id = User.objects.filter(id=pk)
+        if id:
+            json_data = request.body
+            stream = io.BytesIO(json_data)
+            python_data = JSONParser().parse(stream)
+            stu = User.objects.get(id=pk)
+            serializer = UserSerializer(stu, data=python_data, partial = True)
+            # serializer = UserSerializer(stu, data=python_data)
+            if serializer.is_valid():
+                serializer.save()
+                res = {'msg':'Data Updated !!'}
+                json_data = JSONRenderer().render(res)
+                return HttpResponse(json_data, content_type='application/json')
+            json_data = JSONRenderer().render(serializer.errors)
+            return HttpResponse(json_data, content_type='application/json')
+        else:
+            res = {'msg': 'id not present in Database'}
+            return JsonResponse(res)
+
+    elif request.method == 'DELETE':
+        id = python_data.filter('pk')
+        if id:
+            stu = User.objects.get(id=pk)
             stu.delete()
             res = {'msg': 'Data Deleted!!'}
             return JsonResponse(res, safe=False)
